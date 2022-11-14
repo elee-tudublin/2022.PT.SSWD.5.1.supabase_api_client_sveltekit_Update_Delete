@@ -1,4 +1,4 @@
-# Web API SvelteKit Client: Add a new Product
+# Supabase SvelteKit Client:  Part 2 - Update, and Delete Products
 
 Enda Lee 2022
 
@@ -6,7 +6,7 @@ Enda Lee 2022
 
 1. Download or `fork` the start site from this repository.
 2. Open in VS Code.
-3. copy `sample.env` to `.env` and configure for your database.
+3. copy `sample.env` to `.env` and configure for your Supabase connection.
 4. In a terminal run `npm install`
 5. Start the application using `npm run dev`
 
@@ -14,19 +14,9 @@ Enda Lee 2022
 
 ## Introduction
 
-In this tutorial you will add new products the Database via an **`HTTP POST`** request to the API. The body of the POST request will include the values for a new product which need to be validated and inserted.
+In this tutorial you will add Update and Delete functionality to the application, along with sortable columns. The finished page will look like this example:
 
-The web API (Supabase) will use SQL commands to accomplish the above but that will be hidden from users of the API who will only see the HTTP interface.
-
-When http://localhost:5173 loads first, the empty default page looks like the following. 
-
-![start - empty page](./media/finished.png)
-
-
-
-This page shows the current list of products (and categories). This lab will enable new products to be added via a form.
-
-
+![start - the products page](./media/start.png)
 
 ## 1. Pre-requisites
 
@@ -36,468 +26,136 @@ The application will use **separate** **`client`** and **`server`** applications
 
 Make sure that your Supabase database instance is setup and running
 
-
-
 ![client and server apps](./media/supabase_dash.png)
 
-The client site/ application will fetch its data from the server-side API running on http://localhost:5001
 
 
 
-## 2. Add a new Product via the form
 
-#### 2.1. Show the form when the Add Product button is clicked
+## 2. The start site
 
-The button will be displayed under the products list:
+#### 2.1. The main products page
 
-
-
-![add_product_button](./media/add_product_button.png)
+When http://localhost:5173 loads first, the empty default page looks like the following. Note the completed column sort functionality.
 
 
 
-Open the home page, `src/routes/routes/+page.svelte`, add a button link:
+## 3. Column sorting
 
-![button](./media/button_link.png)
+This feature is implemented in the start site. When a column header in the table is clicked, the table is sorted by that column - either in ascending or descending order.
 
-
-
-```html
-<a id="AddProductButton" class="btn btn-primary" href="/addproduct" role="button">New Product</a>
-```
-
-
-
-#### 2.2  The form page and route
-
-You can see that the button links to `/addproduct`. Add this route to the `routes` folder:
-
-1. Add a new subfolder named after the route `addproduct`.
-2. Add the svelte client page `+page.svelte`
-3. Add a svelte server script `+page.server.js`   
-
-![add product route](./media/addproduct_route.png)
-
-
-
-##### The form (`+page.svelte`)
-
-This is a **Bootstrap 5** styled form, which will look like this when displayed:
-
-![](./media/add_product_form.png)
-
-```html
-<!-- Main Content - Products etc. -->
-		<div class="row">
-			<!-- Page Header -->
-			<h2 class="mt-5">Add Product</h2>
-		</div>
-
-		<div class="row">
-			<!-- Product Form -->
-			<form
-                <!-- POST method supports sending form data in request body -->
-			 	method="POST"
-            	<!-- This is where data will be sent when the form is submitted -->
-			 	action="?/addproduct"
-			 >
-				<div class="row mb-3">
-					<label for="category_id" class="form-label">Category:</label>
-					<div class="col-sm-8">
-						<select id="category_id" class="form-select" name="category_id">
-							<option value="0">Choose a category</option>
-							{#each $categories as cat}
-								<option value={cat.id}>{cat.category_name}</option>
-							{/each}
-						</select>
-					</div>
-				</div>
-				<div class="row mb-3">
-					<label for="product_name" class="form-label">Name:</label>
-					<div class="col-sm-8">
-						<input 
-							id="product_name" 
-							type="text" 
-							class="form-control" 
-							name="product_name" 
-							value=""
-						/>
-					</div>
-				</div>
-				<div class="row mb-3">
-					<label for="product_description" class="form-label">Description:</label>
-					<div class="col-sm-8">
-						<input
-						id="product_description"
-						type="text"
-						class="form-control"
-						name="product_description"
-						value=""
-					/>
-					</div>
-				</div>
-				<div class="row mb-3">
-					<label for="product_stock" class="form-label">Stock:</label>
-					<div class="col-sm-8">
-						<input 
-							id="product_stock" 
-							type="number" 
-							class="form-control" 
-							name="product_stock" 
-							value="" 
-						/>
-					</div>
-				</div>
-				<div class="row mb-3">
-					<label for="product_price" class="form-label">Price:</label>
-					<div class="col-sm-8">
-						<input
-							id="product_price"
-							type="number"
-							min="0.00"
-							max="10000.00"
-							step="0.01"
-							class="form-control"
-							name="product_price"
-							value=""
-						/>
-					</div>
-				</div>
-				<!-- productId is a hidden field value is not required but set = 0-->
-				<input id="id" type="hidden" value="0" />
-				<div class="mb-3">
-					<button type="submit" class="btn btn-primary"> Add Product </button>
-					<a href="/" class="btn btn-secondary"> Cancel </a>
-				</div>
-			</form>
-			<!-- End form-->
-		</div>
-</div>
-```
-
-
-
-The category select box must be filled so that they can be selected. Add the follow script block at the top to import `categories` from the `product store`
+To support this functionality, filtered is used as a *subscribed* 'copy' of `$product`. This is because `$product` is not compatible with the JavaScript Array `sort` method.   You will see that `filtered` is also used in the loop which fills the products table.
 
 ```javascript
-<script>
-	import { categories, getAllCategories } from '../../stores/productsStore.js';
-
-	// Update list of categories (used in form)
-	getAllCategories();
-</script>
+	$: filtered = $products;
 ```
 
 
 
-The `{#each}{/each}` block to add an option for each category is already included in the HTML:
+Open `scr/routes/+page.svelte` to see the `on:click` handlers of each table header. Note that the call to `sortNumeric()` or `sortAlpha()` depending on the data type to be sorted. 
 
-![](./media/category_select.png)
-
-
+![clickable table headers](./media/sorting_table_headers.png)
 
 
 
-## 3. Saving a new product
+further up in  `scr/routes/+page.svelte` you can see the object used to keep track of sort direction and also the functions.
 
-The Add Product form has two attributes which define what happens after the **Add Product ** button is clicked.
-
-1. **`method="POST"`** will result in a `POST` request to the server with the form data contained in the body of the request.
-2. **`action="?/addproduct"`** defines the form `action` - the script/ function which will handle the data sent.
+![sorting](./media/column_sorting_functions.png)
 
 
 
-#### 3.1 The `addproduct` `action handler` 
+## 4. Updating and Deleting Products
 
-This is defined in the server-side script`addproduct/+page.server.js`
+The Introduction screenshot above shows two buttons which will be used to update or delete products. Each product in the table will have its own buttons so that when they are clicked, the appropriate route or function can be called and a parameter passed.
 
-This script doe the following:
+ 
 
-1. Import dependencies
-2. Define the `addProduct` form `action`. This code executes when the form is submitted
+### 4.1. Add the buttons
 
-`addProduct` doe the following:
+The buttons above are styled using Bootstrap 5 icons. The full set can be found at https://getbootstrap.com/docs/5.0/extend/icons/
 
-1. Read the `formData` - sent in the request body (as it an HTTP POST)
-2. Validate the data
-3. If validation successful call `addNewProduct(product)` passing the valid product. Afterwards return the successful result
-4. If validation fails, return an error result.
+The required CSS has is imported in `src/app.html` along with the other Bootstrap 5 dependencies.
 
-Read the comments for details. 
+The two buttons should be added to the table after the existing table data (`src/routes/+page.svelte`). The route to `/updateproduct/[id]` and the `deleteProduct(id)` function will be added later.
 
-```javascript
-// Import sveltekit dependencies
-// @ts-ignore
-import { invalid, redirect } from "@sveltejs/kit"
-
-// Import addNewProduct function from the product store
-import {addNewProduct} from '../../stores/productsStore';
-
-// The form action handler(s)
-export const actions = {
-
-  // This is where the form sends its data
-  // @ts-ignore
-  addproduct: async ({request }) => {
-    // @ts-ignore
-    let success = false;
-
-    // get data from the POST request
-    const form_data = await request.formData();
-
-    // read each value
-    const product = {
-      category_id: Number(form_data.get('category_id')),
-      product_name: form_data.get('product_name'),
-      product_description: form_data.get('product_description'),
-      product_stock: Number(form_data.get('product_stock')),
-      product_price: Number(form_data.get('product_price'))
-    }
-
-    // Basic validation check
-    if (product.category_id > 0 &&
-        product.product_name != '' &&
-        product.product_description != '' &&
-        product.product_stock > 0 &&
-        product.product_price > 0
-    ) {
-        // Add the new product to Supabase
-        const result = await addNewProduct(product);
-        console.log('add product result: ', result)
-
-      // If validation passed - return the result
-      // This is a JS object containing the success state, a message, and a copy of the newly added product (from Supabase)
-      return { 
-        success: true,
-        // The following annotation is to ignore TypeScript Syntax errors detected by ESLint and the Svelte VS Code extensions
-        // @ts-ignore
-        message: `New product added with id: ${result[0].id}`,
-        // @ts-ignore
-        product: result[0]
-      };
-      // If va;idation failed
-      // Return a response with Status 400
-      // set error state, a message, and return product (a copy of the form data) 
-    } else {
-      return invalid(400, {
-        error: true,
-        message: 'validation failed',
-        product: product
-      })
-    }
-  }
-};
-```
+![Edit and Delete buttons](./media/add_buttons.png)
 
 
 
-#### 3.2 The `addNewProduct()` function from `stc/store/productsStore.js`
+### 4.2. Delete a product by id
 
-```javascript
-// Function to call Supabase and insert a row
-// @ts-ignore
-export const addNewProduct = async (new_product) => {
-    const { data, error } = await supabase
-    .from('product')
-    .insert([
-        { category_id: Number(new_product?.category_id), 
-          product_name: new_product?.product_name,
-          product_description: new_product?.product_description,
-          product_stock: Number(new_product?.product_stock),
-          product_price: Number(new_product?.product_price)
-         },
-    ])
-    // Select the newly inserted product (so that it can be returned)
-    .select();
-    
-    if(error) {
-        return console.error(error);
-    }
+When one of the the bin icons is clicked, its associated product should be deleted by its `id`. It is always a good idea to confirm a permanent changes such as delete, this can be achieved using a standard JavaScript prompt dialog. 
 
-    // return inserted product
-    return data;
-}
-```
+![confirm deletion](./media/delete_confirm.png)
 
 
 
-#### 3.3 Show the result of insert in  the `addform` page
+The `deleteProduct()` function should be added to the `<script>` section of the page. For now it displays the prompt and outputs to the console:
 
-The form page is reloaded after the product is inserted so the result can be displayed. Note the `<script>` block changes from 2.2 above and also the `{#if} {:else} {/if}` block to control whether the result or form is displayed.
+![deleteProduct()](./media/delete_product_function.png)
 
 
+
+The functionality to delete via an API call is missing and currently clicking ok will only log a message to the console.
+
+![delete console log](./media/delete_console.png)
+
+
+
+**Complete the function so that it deletes the product by id using the `product store` and and an API call by adding he following:**
+
+1. Add/ Modify the `deleteProductById(id)` function in **`productsStore.js`**. It should accept the product id as a parameter and call the Supabase API to perform the delete.
+2. Import `deleteProductById` in the product display page.
+3. Call the function from `deleteProduct()` after user confirmation.
+4. Reload the products list.
+
+
+
+### 5.2 Update an existing product
+
+Clicking the pencil (edit) icon for a product will navigate to the `/editproduct/[id]` route:
+
+![edit code](./media/edit_link.png)
+
+
+
+This will display a message confirming the `id` param from the URL: 
+
+![update product](./media/updateproduct_route.png)
+
+
+
+
+
+The param is defined by creating a subfolder named `[id]` in the `updateproduct` route folder. 
+
+![update product id param](./media/updateproduct_id_route.png)
+
+`updateproduct/[id]/+page.svelte` contains the code to read the `id` parameter value from the `URL` and display it:
 
 ```html
 <script>
+    import { page } from '$app/stores';
 
-	// Sveltekit form enhancements
-	import { enhance, applyAction } from '$app/forms';
-
-	// Import the store etc.
-	import { categories, getAllCategories } from '../../stores/productsStore';
-
-	// Access data returned from +page.server.js
-	// @ts-ignore
-	export let data;
-
-	// Access data returned from +page.server.js
-	// @ts-ignore
-	export let form;
-
-	// Update list of categories (used in form)
-	getAllCategories();
 </script>
-
-<!-- Main Content - Products etc. -->
-<div class="container">
-	<!-- If the insert was sucessfull display the new product details-->
-	{#if form?.success}
-
-		<div class="row">
-			<!-- Page Header -->
-			<h2 class="mt-5">{form?.message}</h2>
-		</div>
-
-		<div class="row">
-			<div class="row mb-3">
-				<h6>Product ID: {form?.product.id}</h6>
-			</div>
-			<div class="row mb-3">
-				<h6>Category: {form?.product.category_id}</h6>
-			</div>
-			<div class="row mb-3">
-				<h6>Name: {form?.product.product_name}</h6>
-			</div>
-			<div class="row mb-3">
-				<h6>Description: {form?.product.product_description}</h6>
-			</div>
-			<div class="row mb-3">
-				<h6>Stock: {form?.product.product_stock}</h6>
-			</div>
-			<div class="row mb-3">
-				<h6>Price: {form?.product.product_price}</h6>
-			</div>
-		</div>
-	<!-- else show the form again (very simple error handling - should also show validation errors)-->
-	{:else}
-		<div class="row">
-			<!-- Page Header -->
-			<h2 class="mt-5">Add Product</h2>
-		</div>
-
-		<div class="row">
-			<!-- Product Form - note the form enhancements -->
-			<!-- Note that field values will be empty first time but will contain values entered if resubmission required (after failed validation) -->
-			<form
-			 	method="POST" 
-			 	action="?/addproduct"
-				 use:enhance={({ form }) => {
-					// Before form submission to server
-					return async ({ result, update }) => {
-						// After form submission to server
-						if (result.type === 'success') {
-							await applyAction(result);
-						}
-						if (result.type === 'invalid') {
-							await applyAction(result);
-						}
-						update();
-					};
-				}}
-			 >
-				<div class="row mb-3">
-					<label for="category_id" class="form-label">Category:</label>
-					<div class="col-sm-8">
-						<select id="category_id" class="form-select" name="category_id">
-							<option value="0">Choose a category</option>
-							{#each $categories as cat}
-								<option value={cat.id}>{cat.category_name}</option>
-							{/each}
-						</select>
-					</div>
-				</div>
-				<div class="row mb-3">
-					<label for="product_name" class="form-label">Name:</label>
-					<div class="col-sm-8">
-						<!-- If form data exists display it (on error), display it. Otherwise blank  -->
-						<input 
-							id="product_name" 
-							type="text" 
-							class="form-control" 
-							name="product_name"
-							value="{form?.product.product_name || ''}"
-						/>
-					</div>
-				</div>
-				<div class="row mb-3">
-					<label for="product_description" class="form-label">Description:</label>
-					<div class="col-sm-8">
-						<input
-						id="product_description"
-						type="text"
-						class="form-control"
-						name="product_description"
-						value="{form?.product.product_description || ''}"
-					/>
-					</div>
-				</div>
-				<div class="row mb-3">
-					<label for="product_stock" class="form-label">Stock:</label>
-					<div class="col-sm-8">
-						<input 
-							id="product_stock" 
-							type="number" 
-							class="form-control" 
-							name="product_stock" 
-							value="{form?.product.product_stock || ''}" 
-						/>
-					</div>
-				</div>
-				<div class="row mb-3">
-					<label for="product_price" class="form-label">Price:</label>
-					<div class="col-sm-8">
-						<input
-							id="product_price"
-							type="number"
-							min="0.00"
-							max="10000.00"
-							step="0.01"
-							class="form-control"
-							name="product_price"
-							value="{form?.product.product_price || ''}"
-						/>
-					</div>
-				</div>
-				<!-- productId is a hidden field value is not required but set = 0-->
-				<input id="id" type="hidden" value="0" />
-				<div class="mb-3">
-					<button type="submit" class="btn btn-primary"> Add Product </button>
-					<a href="/" class="btn btn-secondary"> Cancel </a>
-				</div>
-
-				<!-- Show if a validation error recorded in the result -->
-				{#if form?.error}
-					<div class="alert alert-danger col-sm-8" role="alert">validation failed: {form?.message}</div>
-				{/if}
-			</form>
-			<!-- End form-->
-		</div>
-	{/if} <!-- End the if block-->
-</div>
-
+  
+  <h1>Params</h1>
+  {#if ($page.params.id)}
+    <h3>To Do: Update Product with id: {$page.params.id}</h3>
+  {/if}
 ```
 
+#### **To Do:** Add a form so that the product matching this id can be updated and submitted (similar to adding a new product).
 
-
-Here is an example of the message displayed after a product is added successfully
-
-![After successful product insert](./media/success_message.png)
+Form actions, etc. should be defined in `updateproduct/[id]/+page.server.js`. Also add the required product store function.
 
 
 
-This is an example of the form reloaded with errors:
+##### 5.2.1. For reference: QueryString version http://localhost:5173/updateproduct?id=88888
 
-![form error](./media/form_error.png)
+If you need to send a parameter via the URL query string, you will find an example in `updateproduct/+page.svelte` and `updateproduct/page.js` 
+
+![querystring values](./media/querystring_url.png)
 
 
 

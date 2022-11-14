@@ -88,6 +88,17 @@ export const addNewProduct = async (new_product) => {
     return data;
 }
 
+// To do - delete an existing product by id
+// id set to 0 by default
+export const deleteProductById = async (id = 0) => {
+
+    if (id > 0) {
+        // To do:
+        // Call the Supabase API to delete product with matching id
+    }
+
+}
+
 // initialise the store
 // getAllProducts();
 // getAllCategories();

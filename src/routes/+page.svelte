@@ -5,6 +5,65 @@
 		getAllProducts,
 		getProductsByCat
 	} from '../stores/productsStore.js';
+
+
+	// filtered is subscribed to the $products store
+	// this copy of $products is used as $products cannot be sorted like an ordinary array.
+	// initially filtered is a copy of products (from the store)
+	$: filtered = $products;
+
+	// Object to store sort directions
+	const table_sort = {
+		id: false,
+		product_name: false,
+		product_description: false,
+		product_stock: false,
+		product_price: false
+	};
+
+	// Sort alpha values in a givren column (default to product_name)
+	const sortAlpha = (col = 'product_name') => {
+
+		// reverse current sort direction for this col
+		// i.e. reverse the current order
+		table_sort[col] = !table_sort[col];
+
+		// output to the  browser console
+		console.log(`${col} : ${table_sort[col]}`);
+
+		// sort the products array based on column selected
+		// sort takes a function parameter to indicate which column should be sorted (e.g. product_name) 
+		filtered = filtered.sort((a, b) => {
+			// sort asc
+			if (table_sort[col] === true) {
+				return a[col].toLowerCase() < b[col].toLowerCase();
+			// sort desc
+			} else {
+				return a[col].toLowerCase() > b[col].toLowerCase();
+			}
+		});
+	}
+
+	// sort numeric values in a given column (default to product_price)
+	const sortNumeric = (col = 'product_price') => {
+
+		// reverse current sort direction for this col
+		table_sort[col] = !table_sort[col];
+
+		// check browser console for output
+		// sort takes a function parameter to indicate which column should be sorted (e.g. product_price) 
+		console.log(`${col} : ${table_sort[col]}`);
+
+		// sort the products array based on column selected
+		filtered = filtered.sort((a, b) => {
+			if (table_sort[col] === true) {
+				return a[col] - b[col];
+			} else {
+				return b[col] - a[col];
+			}
+		});
+	}
+
 </script>
 
 <!-- Main Content - Products etc. -->
@@ -41,16 +100,16 @@
 				<table class="table table-striped table-bordered table-hover">
 					<thead>
 						<tr>
-							<th>id</th>
-							<th>name</th>
-							<th>description</th>
-							<th>stock</th>
-							<th>price</th>
+							<th><a on:click={() => sortNumeric('id')} href="/">id</a></th>
+							<th><a on:click={() => sortAlpha('product_name')} href="/">name</a></th>
+							<th><a on:click={() => sortAlpha('product_description')} href="/">description</a></th>
+							<th><a on:click={() => sortNumeric('product_stock')} href="/">stock</a></th>
+							<th><a on:click={() => sortNumeric('product_price')} href="/">price</a></th>
 						</tr>
 					</thead>
 					<tbody id="productRows">
 						<!-- Product Rows to be inserted here -->
-						{#each $products as product}
+						{#each filtered as product}
 							<tr>
 								<td>{product.id}</td>
 								<td>{product.product_name}</td>
