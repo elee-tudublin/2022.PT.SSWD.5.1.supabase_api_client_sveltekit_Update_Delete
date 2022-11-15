@@ -6,7 +6,6 @@
 		getProductsByCat
 	} from '../stores/productsStore.js';
 
-
 	// filtered is subscribed to the $products store
 	// this copy of $products is used as $products cannot be sorted like an ordinary array.
 	// initially filtered is a copy of products (from the store)
@@ -23,7 +22,6 @@
 
 	// Sort alpha values in a givren column (default to product_name)
 	const sortAlpha = (col = 'product_name') => {
-
 		// reverse current sort direction for this col
 		// i.e. reverse the current order
 		table_sort[col] = !table_sort[col];
@@ -32,26 +30,25 @@
 		console.log(`${col} : ${table_sort[col]}`);
 
 		// sort the products array based on column selected
-		// sort takes a function parameter to indicate which column should be sorted (e.g. product_name) 
+		// sort takes a function parameter to indicate which column should be sorted (e.g. product_name)
 		filtered = filtered.sort((a, b) => {
 			// sort asc
 			if (table_sort[col] === true) {
 				return a[col].toLowerCase() < b[col].toLowerCase();
-			// sort desc
+				// sort desc
 			} else {
 				return a[col].toLowerCase() > b[col].toLowerCase();
 			}
 		});
-	}
+	};
 
 	// sort numeric values in a given column (default to product_price)
 	const sortNumeric = (col = 'product_price') => {
-
 		// reverse current sort direction for this col
 		table_sort[col] = !table_sort[col];
 
 		// check browser console for output
-		// sort takes a function parameter to indicate which column should be sorted (e.g. product_price) 
+		// sort takes a function parameter to indicate which column should be sorted (e.g. product_price)
 		console.log(`${col} : ${table_sort[col]}`);
 
 		// sort the products array based on column selected
@@ -62,6 +59,10 @@
 				return b[col] - a[col];
 			}
 		});
+	};
+
+	const deleteProduct = (id = 0) => {
+
 	}
 
 </script>
@@ -122,7 +123,9 @@
 				</table>
 			</div>
 			<!-- Add product button goes here -->
-			<a id="AddProductButton" class="btn btn-primary" href="/addproduct" role="button">New Product</a>
+			<a id="AddProductButton" class="btn btn-primary" href="/addproduct" role="button"
+				>New Product</a
+			>
 		</div>
 		<!-- End Product col -->
 	</div>
