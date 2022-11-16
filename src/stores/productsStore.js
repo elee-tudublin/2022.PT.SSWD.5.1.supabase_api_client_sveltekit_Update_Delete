@@ -40,11 +40,29 @@ export const getAllCategories= async () => {
     categories.set(data);
 }
 
+// Get a product by id from Supabase
+// @ts-ignore
+export const GetProductById = async (id) => {
+	const { data, error } = await supabase
+		.from('product')
+		.select()
+        .eq('id', id);
+
+	if (error) {
+		console.error(error);
+	}
+
+    if (data) {
+        return data[0];
+    }
+
+    return '';
+};
+
 // Get products by category id
 export const getProductsByCat = async (cat_id = 0) => {
 
     if (cat_id > 0) {
-
         const {data, error} = await supabase
             .from('product')
             .select()
@@ -98,6 +116,31 @@ export const deleteProductById = async (id = 0) => {
     }
 
 }
+
+// Function to call Supabase and update a row
+// @ts-ignore
+export const updateProduct = async (up_product) => {
+	const { data, error } = await supabase
+		.from('product')
+		.update([
+			{
+				category_id: Number(up_product.category_id),
+				product_name: up_product.product_name,
+				product_description: up_product.product_description,
+				product_stock: Number(up_product.product_stock),
+				product_price: Number(up_product.product_price)
+			}
+		])
+		.eq('id', up_product.id)
+        .select();
+
+	if (error) {
+		return console.error(error);
+	}
+
+	// return updated product
+	return data;
+};
 
 // initialise the store
 // getAllProducts();
