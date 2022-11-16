@@ -22,6 +22,5 @@ const { product } = data;
 </script>
 
 <h1>Params</h1>
-<h3>Update Product: {$page.params.id}</h3>
-<h3>Product name: {product.product_name}</h3>
-
+<h3>id param from url: {$page.params?.id}</h3>
+<h3>Product name: {product?.product_name}</h3>
